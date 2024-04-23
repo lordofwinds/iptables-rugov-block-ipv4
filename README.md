@@ -1,3 +1,4 @@
+# This is fork. Keep only ipv4 ip.
 # Keep your webserver clean from RKN bots using iptables.
 
 This project uses blacklists from https://github.com/C24Be/AS_Network_List/blob/main/blacklists/blacklist.txt

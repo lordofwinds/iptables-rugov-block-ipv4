@@ -20,6 +20,15 @@ if ! sudo wget -O "$NEW_IP_FILE" https://github.com/C24Be/AS_Network_List/raw/ma
 	exit 1
 fi
 
+is_mask_48() {
+    local ip="$1"
+    if [[ "$ip" =~ /48$ ]]; then
+        return 0 # true, маска /48 присутствует
+    else
+        return 1 # false, маска /48 отсутствует
+    fi
+}
+
 # Read IP addresses from old file
 old_addresses=()
 while IFS= read -r ip || [[ -n "$ip" ]]; do
@@ -36,6 +45,10 @@ done < "$NEW_IP_FILE"
 added=0
 removed=0
 for addr in "${new_addresses[@]}"; do
+    if is_mask_48 "$addr"; then
+        echo "Skipping /48 address: $addr"
+        continue
+    fi
 	if ! sudo iptables -t raw -C PREROUTING -s "$addr" -j DROP &>/dev/null; then
 		if [[ "$FMT_LOGS" ]]; then
 			iptables -t raw -A PREROUTING -s "$addr" -j LOG --log-prefix "Blocked RUGOV IP attempt: "
@@ -46,6 +59,10 @@ for addr in "${new_addresses[@]}"; do
 done
 
 for addr in "${old_addresses[@]}"; do
+    if is_mask_48 "$addr"; then
+        echo "Skipping /48 address: $addr"
+        continue
+    fi
 	if ! grep -q "$addr" "$NEW_IP_FILE"; then
 		iptables -t raw -D PREROUTING -s "$addr" -j LOG --log-prefix "Blocked RUGOV IP attempt: " || true
 		iptables -t raw -D PREROUTING -s "$addr" -j DROP
